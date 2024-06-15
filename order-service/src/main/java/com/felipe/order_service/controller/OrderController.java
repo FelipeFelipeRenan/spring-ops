@@ -28,9 +28,13 @@ public class OrderController {
         orderService.createOrder(order);
     }
 
-    @GetMapping("/{orderID}")
+    @GetMapping("/{orderId}")
     public Order getOrderById(@PathVariable String orderId){
         return orderService.getOrderById(orderId);
     } 
 
+    @GetMapping
+    public String testGet(){
+        return "<h1>ola mundo</h1>";
+    }
 }
