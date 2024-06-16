@@ -42,6 +42,7 @@ services:
     build:
       context: order-service/
       dockerfile: Dockerfile
+    image: felipedev21/spring-ops-order-service:latest
     container_name: order-service
     environment:
       - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/orderdb
