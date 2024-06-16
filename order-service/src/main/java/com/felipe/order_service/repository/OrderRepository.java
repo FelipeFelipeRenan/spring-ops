@@ -1,7 +1,10 @@
 package com.felipe.order_service.repository;
 
+import java.util.List;
+
 import org.springframework.stereotype.Repository;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBScanExpression;
 import com.felipe.order_service.model.Order;
 
 @Repository
@@ -11,6 +14,10 @@ public class OrderRepository {
 
     public OrderRepository(DynamoDBMapper dynamoDBMapper){
         this.dynamoDBMapper = dynamoDBMapper;
+    }
+    
+    public List<Order> getAllItems(){
+        return dynamoDBMapper.scan(Order.class, new DynamoDBScanExpression());
     }
 
     public void save(Order order){

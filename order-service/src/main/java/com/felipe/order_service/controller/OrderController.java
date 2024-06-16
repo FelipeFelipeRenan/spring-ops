@@ -1,5 +1,7 @@
 package com.felipe.order_service.controller;
 
+import java.util.List;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -23,6 +25,11 @@ public class OrderController {
         this.orderService = orderService;
     }
 
+    @GetMapping
+    public List<Order> getAllItems(){
+        return orderService.getALlItems();
+    }
+
     @PostMapping
     public void createOrder(@RequestBody Order order){
         orderService.createOrder(order);
@@ -33,7 +40,7 @@ public class OrderController {
         return orderService.getOrderById(orderId);
     } 
 
-    @GetMapping
+    @GetMapping("/testing")
     public String testGet(){
         return "<h1>ola mundo</h1>";
     }
