@@ -11,8 +11,8 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-  
-  
+    networks:
+      - mynetwork
 
   rabbitmq:
     image: rabbitmq:3-management
@@ -22,9 +22,26 @@ services:
       - "15672:15672"
     volumes:
       - rabbitmq_data:/var/lib/rabbitmq
+    networks:
+      - mynetwork
+
+  localstack:
+    image: localstack/localstack
+    container_name: localstack
+    ports:
+      - "4566:4566"
+    environment:
+      - SERVICES=dynamodb
+      - DEFAULT_REGION=us-east-1
+    volumes:
+      - localstack_data:/var/lib/localstack
+    networks:
+      - mynetwork
 
   order-service:
-    image: openjdk:21-jdk
+    build:
+      context: order-service/
+      dockerfile: Dockerfile
     container_name: order-service
     environment:
       - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/orderdb
@@ -32,18 +49,21 @@ services:
       - SPRING_DATASOURCE_PASSWORD=postgres
       - SPRING_RABBITMQ_HOST=rabbitmq
       - SPRING_RABBITMQ_PORT=5672
-      - AWS_DYNAMODB_ENDPOINT=http://localhost:4566
+      - AWS_DYNAMODB_ENDPOINT=http://localstack:4566
       - AWS_REGION=us-east-1
     ports:
       - "8081:8080"
     depends_on:
       - postgres
       - rabbitmq
-    volumes:
-      - ./order-service:/app
-    working_dir: /app
-    command: ["./mvnw", "spring-boot:run"]
+      - localstack
+    networks:
+      - mynetwork
 
 volumes:
   postgres_data:
   rabbitmq_data:
+  localstack_data:
+
+networks:
+  mynetwork:
