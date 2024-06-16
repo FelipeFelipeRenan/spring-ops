@@ -1,6 +1,7 @@
 import boto3
 from botocore.exceptions import ClientError
-from decimal import Decimal
+from decimal import Decimal, ROUND_HALF_UP
+from faker import Faker
 
 # Configuração do cliente DynamoDB
 dynamodb = boto3.resource(
@@ -35,27 +36,21 @@ table_definition = {
     }
 }
 
-# Dados para inserir
-orders = [
-    {
-        'orderId': '1',
-        'product': 'Product A',
-        'quantity': 2,
-        'price': Decimal('10.0')
-    },
-    {
-        'orderId': '2',
-        'product': 'Product B',
-        'quantity': 1,
-        'price': Decimal('20.0')
-    },
-    {
-        'orderId': '3',
-        'product': 'Product C',
-        'quantity': 3,
-        'price': Decimal('15.0')
-    }
-]
+# Inicializar o Faker
+fake = Faker()
+
+# Gerar dados fictícios
+def generate_fake_orders(n):
+    orders = []
+    for i in range(n):
+        order = {
+            'orderId': f'{i+1}',
+            'product': fake.word(),
+            'quantity': fake.random_int(min=1, max=10),
+            'price': Decimal(str(round(fake.random_number(digits=2, fix_len=True) + fake.random.random(), 2))).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+        }
+        orders.append(order)
+    return orders
 
 def create_table():
     try:
@@ -68,7 +63,7 @@ def create_table():
         else:
             print(f"Unable to create table: {e.response['Error']['Message']}")
 
-def seed_data():
+def seed_data(orders):
     table = dynamodb.Table(table_name)
     for order in orders:
         try:
@@ -79,4 +74,5 @@ def seed_data():
 
 if __name__ == "__main__":
     create_table()
-    seed_data()
+    fake_orders = generate_fake_orders(50)  # Gerar 50 pedidos fictícios
+    seed_data(fake_orders)
