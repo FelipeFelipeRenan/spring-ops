@@ -15,4 +15,4 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     - name: Build the Docker image
-      run: docker build ./order-service --file Dockerfile --tag felipedev21/order-service:latest
+      run: docker build . --file ./order-service/Dockerfile --tag felipedev21/order-service:latest
