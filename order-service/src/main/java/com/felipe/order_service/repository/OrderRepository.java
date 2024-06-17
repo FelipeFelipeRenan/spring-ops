@@ -2,6 +2,8 @@ package com.felipe.order_service.repository;
 
 import java.util.List;
 
+import javax.swing.Spring;
+
 import org.springframework.stereotype.Repository;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBScanExpression;
@@ -26,5 +28,17 @@ public class OrderRepository {
 
     public Order getById(String orderId){
         return dynamoDBMapper.load(Order.class, orderId);
+    }
+
+    public void deleteById(String orderId){
+        Order order = getById(orderId);
+        if (order != null) {
+            dynamoDBMapper.delete(order);
+            
+        }
+    }
+
+    public void update(Order order){
+        save(order);
     }
 }

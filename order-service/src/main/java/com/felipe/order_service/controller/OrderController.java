@@ -3,6 +3,8 @@ package com.felipe.order_service.controller;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -12,6 +14,8 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.felipe.order_service.model.Order;
 import com.felipe.order_service.service.OrderService;
+import org.springframework.web.bind.annotation.PutMapping;
+
 
 @RestController
 @RequestMapping("/v1/orders")
@@ -43,5 +47,26 @@ public class OrderController {
     @GetMapping("/testing")
     public String testGet(){
         return "<h1>ola mundo</h1>";
+    }
+
+    @DeleteMapping("/{orderId}")
+    public void deleteOrderById(@PathVariable String orderId ){
+        orderService.deleteOrderById(orderId);
+    }
+
+    @PutMapping("/{orderId}")
+    public ResponseEntity<Void> putMethodName(@PathVariable String orderId, @RequestBody Order order) {
+
+        Order existingOrder = orderService.getOrderById(orderId);
+
+        if (existingOrder != null) {
+            order.setOrderId(orderId);
+            orderService.updateOrder(order);
+            return ResponseEntity.ok().build();
+        } else{
+            return ResponseEntity.notFound().build();
+        }
+
+        
     }
 }

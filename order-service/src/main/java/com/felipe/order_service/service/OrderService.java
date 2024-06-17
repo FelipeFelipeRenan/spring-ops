@@ -31,5 +31,12 @@ public class OrderService {
         return orderRepository.getById(orderId);
     }
 
+    public void deleteOrderById(String orderId){
+        orderRepository.deleteById(orderId);
+    }
+
+    public void updateOrder(Order order){
+        orderRepository.update(order);
+    }
 
 }
