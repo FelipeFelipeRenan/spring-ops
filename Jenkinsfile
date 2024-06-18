@@ -1,5 +1,10 @@
 pipeline {
-    agent any
+   agent {
+    docker {
+        image 'felipedev21/order-service:latest'
+        args '-v /var/run/docker.sock:/var/run/docker.sock'
+    }
+}
 
     environment {
         JAVA_HOME = '/opt/java/openjdk'
