@@ -14,7 +14,7 @@ pipeline{
         }
         stage('Build Docker Image'){
             steps{
-                sh 'docker build -t my-microservice .'
+                sh 'docker build -t felipedev21/order-service:latest .'
             }
         }
         stage('Deploy to Docker'){
