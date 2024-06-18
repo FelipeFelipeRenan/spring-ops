@@ -12,13 +12,7 @@ pipeline {
                 git url: 'https://github.com/FelipeFelipeRenan/spring-ops.git', branch: 'main'
             }
         }
-        stage('Build') {
-            steps {
-                dir('order-service') {
-                    sh 'mvn clean package -DskipTests'
-                }
-            }
-        }
+
         stage('Build Docker Image') {
             steps {
                 script {
