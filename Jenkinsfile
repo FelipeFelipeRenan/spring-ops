@@ -1,47 +1,45 @@
 pipeline {
-   agent {
-    docker {
-        image 'felipedev21/order-service:latest'
-        args '-v /var/run/docker.sock:/var/run/docker.sock'
-    }
-}
+    agent any
 
     environment {
-        JAVA_HOME = '/opt/java/openjdk'
-        PATH = "${env.JAVA_HOME}/bin:${env.PATH}"
+        DOCKER_IMAGE = 'felipedev21/order-service'
+        DOCKER_TAG = 'latest'
     }
 
     stages {
-        stage('Checkout') {
-            steps {
-                git url: 'https://github.com/FelipeFelipeRenan/spring-ops.git', branch: 'main'
-            }
-        }
-
         stage('Build Docker Image') {
             steps {
                 script {
-                    def image = docker.build("order-service:${env.BUILD_ID}", "order-service/.")
+                    sh "docker build -t ${DOCKER_IMAGE}:${DOCKER_TAG} order-service/."
                 }
             }
         }
         stage('Push Docker Image') {
             steps {
                 script {
-                    docker.withRegistry('https://index.docker.io/v1/', 'dockerhub-credentials') {
-                        def image = docker.image("order-service:${env.BUILD_ID}")
-                        image.push("latest")
-                    }
+                    sh "docker push ${DOCKER_IMAGE}:${DOCKER_TAG}"
                 }
             }
         }
         stage('Deploy') {
             steps {
                 script {
-                    sh 'docker-compose down'
-                    sh 'docker-compose up -d'
+                    // Adicione aqui os comandos para o deploy
+                    sh 'echo "Deploying..."'
                 }
             }
+        }
+    }
+
+    post {
+        always {
+            cleanWs()
+        }
+        success {
+            echo 'Pipeline completed successfully!'
+        }
+        failure {
+            echo 'Pipeline failed!'
         }
     }
 }
