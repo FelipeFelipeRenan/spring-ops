@@ -8,21 +8,22 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.felipe.order_service.model.Order;
 import com.felipe.order_service.service.OrderService;
-import org.springframework.web.bind.annotation.PutMapping;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 
 @RestController
 @RequestMapping("/v1/orders")
 public class OrderController {
     
     private final OrderService orderService;
-
 
     @Autowired
     public OrderController(OrderService orderService){
@@ -55,18 +56,14 @@ public class OrderController {
     }
 
     @PutMapping("/{orderId}")
-    public ResponseEntity<Void> putMethodName(@PathVariable String orderId, @RequestBody Order order) {
-
+    public ResponseEntity<Void> updateOrder(@PathVariable String orderId, @RequestBody Order order) {
         Order existingOrder = orderService.getOrderById(orderId);
-
         if (existingOrder != null) {
             order.setOrderId(orderId);
             orderService.updateOrder(order);
             return ResponseEntity.ok().build();
-        } else{
+        } else {
             return ResponseEntity.notFound().build();
         }
-
-        
     }
 }
