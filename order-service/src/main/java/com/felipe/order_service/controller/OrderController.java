@@ -3,6 +3,7 @@ package com.felipe.order_service.controller;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -15,10 +16,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.felipe.order_service.model.Order;
 import com.felipe.order_service.service.OrderService;
-
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.tags.Tag;
-
 @RestController
 @RequestMapping("/v1/orders")
 public class OrderController {
@@ -36,13 +33,20 @@ public class OrderController {
     }
 
     @PostMapping
-    public void createOrder(@RequestBody Order order){
-        orderService.createOrder(order);
+    public ResponseEntity<?> createOrder(@RequestBody Order order){
+        if(orderService.createOrder(order)){
+            return new ResponseEntity<>(order, HttpStatus.CREATED);
+        } 
+        return new ResponseEntity<>("Cannot create new order", HttpStatus.INTERNAL_SERVER_ERROR);
     }
 
     @GetMapping("/{orderId}")
-    public Order getOrderById(@PathVariable String orderId){
-        return orderService.getOrderById(orderId);
+    public ResponseEntity<?> getOrderById(@PathVariable String orderId){
+        
+        if(orderService.getOrderById(orderId)!= null){
+            return new ResponseEntity<>(orderId, HttpStatus.FOUND);
+        } 
+        return new ResponseEntity<>("Cannot found the order with given ID: "+orderId, HttpStatus.NOT_FOUND);
     } 
 
     @GetMapping("/testing")
@@ -51,19 +55,23 @@ public class OrderController {
     }
 
     @DeleteMapping("/{orderId}")
-    public void deleteOrderById(@PathVariable String orderId ){
-        orderService.deleteOrderById(orderId);
+    public ResponseEntity<?> deleteOrderById(@PathVariable String orderId ){
+        if(orderService.deleteOrderById(orderId)){
+            return new ResponseEntity<> ("Deleted order with given order ID: "+orderId, HttpStatus.OK);
+        }
+        return new ResponseEntity<>("Cannot be able to delete order with given ID: "+orderId, HttpStatus.INTERNAL_SERVER_ERROR);
+        
     }
 
     @PutMapping("/{orderId}")
-    public ResponseEntity<Void> updateOrder(@PathVariable String orderId, @RequestBody Order order) {
+    public ResponseEntity<?> updateOrder(@PathVariable String orderId, @RequestBody Order order) {
         Order existingOrder = orderService.getOrderById(orderId);
         if (existingOrder != null) {
             order.setOrderId(orderId);
             orderService.updateOrder(order);
-            return ResponseEntity.ok().build();
+            return new ResponseEntity<>("Update successful!", HttpStatus.OK);
         } else {
-            return ResponseEntity.notFound().build();
+            return new ResponseEntity<> ("Cannot found the order with the given ID: "+orderId, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 }

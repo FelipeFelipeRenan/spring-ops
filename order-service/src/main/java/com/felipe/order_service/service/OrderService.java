@@ -23,20 +23,23 @@ public class OrderService {
         return orderRepository.getAllItems();
     }
 
-    public void createOrder(Order order){
+    public boolean createOrder(Order order){
         orderRepository.save(order);
+        return true;
     }
 
     public Order getOrderById(String orderId){
         return orderRepository.getById(orderId);
     }
 
-    public void deleteOrderById(String orderId){
+    public boolean deleteOrderById(String orderId){
         orderRepository.deleteById(orderId);
+        return true;
     }
 
-    public void updateOrder(Order order){
+    public boolean updateOrder(Order order){
         orderRepository.update(order);
+        return true;
     }
 
 }
