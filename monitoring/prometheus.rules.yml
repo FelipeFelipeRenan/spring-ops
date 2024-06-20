@@ -1,0 +1,11 @@
+groups:
+  - name: alert.rules
+    rules:
+      - alert: HighLatency
+        expr: job_latency_seconds_sum / job_latency_seconds_count > 0.5
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "High latency detected"
+          description: "Latency is above 0.5 seconds for more than 1 minute."
