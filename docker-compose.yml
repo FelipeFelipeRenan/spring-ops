@@ -53,7 +53,7 @@ services:
       - AWS_DYNAMODB_ENDPOINT=http://localstack:4566
       - AWS_REGION=us-east-1
     ports:
-      - "8081:8080"
+      - "8081:8081"
     depends_on:
       - postgres
       - rabbitmq
@@ -80,6 +80,8 @@ services:
       - "3000:3000"
     volumes:
       - ./datasource.yml:/etc/grafana/datasource.yml
+    depends_on: 
+      - order-service
     networks:
       - mynetwork
 

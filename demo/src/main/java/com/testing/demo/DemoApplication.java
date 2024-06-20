@@ -1,13 +1,13 @@
-package com.felipe.consuming_service;
+package com.testing.demo;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 @SpringBootApplication
-public class TesteopsApplication {
+public class DemoApplication {
 
 	public static void main(String[] args) {
-		SpringApplication.run(TesteopsApplication.class, args);
+		SpringApplication.run(DemoApplication.class, args);
 	}
 
 }
