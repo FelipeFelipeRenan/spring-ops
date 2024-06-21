@@ -74,5 +74,6 @@ def seed_data(orders):
 
 if __name__ == "__main__":
     create_table()
-    fake_orders = generate_fake_orders(50)  # Gerar 50 pedidos fictícios
+    fake_orders = generate_fake_orders(50)
+    print(fake_orders[0])# Gerar 50 pedidos fictícios
     seed_data(fake_orders)

@@ -2,7 +2,11 @@ package com.felipe.order_service.service;
 
 import java.util.List;
 
+import org.hibernate.annotations.Cache;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.CachePut;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 import com.felipe.order_service.model.Order;
@@ -19,19 +23,23 @@ public class OrderService {
         this.orderRepository = orderRepository;
     }
 
+    @Cacheable("orders")    
     public List<Order> getALlItems(){
         return orderRepository.getAllItems();
     }
 
+    @CachePut(value = "orders", key = "#order.id")
     public boolean createOrder(Order order){
         orderRepository.save(order);
         return true;
     }
 
+    @Cacheable(value = "orders", key = "#orderId")
     public Order getOrderById(String orderId){
         return orderRepository.getById(orderId);
     }
 
+    @CacheEvict(value = "orders", key = "#orderId")
     public boolean deleteOrderById(String orderId){
         orderRepository.deleteById(orderId);
         return true;
