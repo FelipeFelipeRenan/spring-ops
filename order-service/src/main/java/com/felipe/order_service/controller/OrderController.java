@@ -42,9 +42,9 @@ public class OrderController {
 
     @GetMapping("/{orderId}")
     public ResponseEntity<?> getOrderById(@PathVariable String orderId){
-        
-        if(orderService.getOrderById(orderId)!= null){
-            return new ResponseEntity<>(orderId, HttpStatus.FOUND);
+        Order order =  orderService.getOrderById(orderId); 
+        if(order != null){
+            return new ResponseEntity<>(order, HttpStatus.FOUND);
         } 
         return new ResponseEntity<>("Cannot found the order with given ID: "+orderId, HttpStatus.NOT_FOUND);
     } 

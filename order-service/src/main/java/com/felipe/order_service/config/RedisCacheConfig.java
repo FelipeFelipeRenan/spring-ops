@@ -1,5 +1,7 @@
 package com.felipe.order_service.config;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.cache.Cache;
 import org.springframework.cache.annotation.CachingConfigurer;
 import org.springframework.cache.annotation.EnableCaching;
@@ -37,29 +39,25 @@ public class RedisCacheConfig implements CachingConfigurer {
 
     private static class CustomCacheErrorHandler implements CacheErrorHandler {
 
+        private static final Logger LOGGER = LoggerFactory.getLogger(CustomCacheErrorHandler.class);
+    
         @Override
         public void handleCacheGetError(RuntimeException exception, Cache cache, Object key) {
-            // TODO Auto-generated method stub
-            throw new UnsupportedOperationException("Unimplemented method 'handleCacheGetError'");
+            LOGGER.error("Error getting data from cache for key {}: {}", key, exception.getMessage());
         }
-
+    
         @Override
         public void handleCachePutError(RuntimeException exception, Cache cache, Object key, Object value) {
-            // TODO Auto-generated method stub
-            throw new UnsupportedOperationException("Unimplemented method 'handleCachePutError'");
+            LOGGER.error("Error putting data into cache for key {}: {}", key, exception.getMessage());
         }
-
+    
         @Override
         public void handleCacheEvictError(RuntimeException exception, Cache cache, Object key) {
-            // TODO Auto-generated method stub
-            throw new UnsupportedOperationException("Unimplemented method 'handleCacheEvictError'");
+            LOGGER.error("Error evicting data from cache for key {}: {}", key, exception.getMessage());
         }
-
+    
         @Override
         public void handleCacheClearError(RuntimeException exception, Cache cache) {
-            // TODO Auto-generated method stub
-            throw new UnsupportedOperationException("Unimplemented method 'handleCacheClearError'");
+            LOGGER.error("Error clearing cache: {}", exception.getMessage());
         }
-       
-    }
-}
+    }}
