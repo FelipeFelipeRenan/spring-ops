@@ -32,22 +32,27 @@ public class OrderService {
     }
 
     @CachePut(value = "orders", key = "#order.id")
+    @CircuitBreaker(name = "order-service", fallbackMethod = "fallbackMethod")
     public boolean createOrder(Order order){
         orderRepository.save(order);
         return true;
     }
 
     @Cacheable(value = "orders", key = "#orderId")
+    @CircuitBreaker(name = "order-service", fallbackMethod = "fallbackMethod")
+
     public Order getOrderById(String orderId){
         return orderRepository.getById(orderId);
     }
 
     @CacheEvict(value = "orders", key = "#orderId")
+    @CircuitBreaker(name = "order-service", fallbackMethod = "fallbackMethod")
     public boolean deleteOrderById(String orderId){
         orderRepository.deleteById(orderId);
         return true;
     }
 
+    @CircuitBreaker(name = "order-service", fallbackMethod = "fallbackMethod")
     public boolean updateOrder(Order order){
         orderRepository.update(order);
         return true;
