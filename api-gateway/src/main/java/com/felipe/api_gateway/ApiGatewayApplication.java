@@ -1,14 +1,13 @@
-package com.felipe.service_discovery;
+package com.felipe.api_gateway;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
-@EnableEurekaServer
 @SpringBootApplication
-public class ServiceDiscoveryApplication {
+public class ApiGatewayApplication {
 
 	public static void main(String[] args) {
-		SpringApplication.run(ServiceDiscoveryApplication.class, args);
+		SpringApplication.run(ApiGatewayApplication.class, args);
 	}
 
 }
