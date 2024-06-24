@@ -58,6 +58,8 @@ services:
       - postgres
       - rabbitmq
       - localstack
+      - api-gateway
+      - service-discovery
     networks:
       - mynetwork
 
@@ -69,20 +71,20 @@ services:
     container_name: api-gateway
     environment:
       - SPRING_APPLICATION_NAME=api-gateway
-      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://service-discovery:8761/eureka/
     ports:
       - "8080:8080"
     depends_on:
-      - eureka-server
+      - service-discovery
     networks:
       - mynetwork
 
-  eureka-server:
+  service-discovery:
     build:
-      context: service-doscovery/
+      context: service-discovery/
       dockerfile: Dockerfile
     image: felipedev21/spring-ops-service-discovery:latest
-    container_name: eureka-server
+    container_name: service-discovery
     environment:
       - SPRING_APPLICATION_NAME=service-discovery
     ports:
