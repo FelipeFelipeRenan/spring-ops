@@ -14,24 +14,25 @@ import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.data.redis.serializer.GenericJackson2JsonRedisSerializer;
 import org.springframework.data.redis.serializer.RedisSerializationContext;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 @Configuration
 @EnableCaching
 public class RedisCacheConfig implements CachingConfigurer {
 
     @Bean
-    public RedisCacheConfiguration cacheConfiguration() {
+    public RedisCacheConfiguration cacheConfiguration(ObjectMapper objectMapper) {
         return RedisCacheConfiguration.defaultCacheConfig()
-                .serializeValuesWith(RedisSerializationContext.SerializationPair.fromSerializer(new GenericJackson2JsonRedisSerializer()));
+                .serializeValuesWith(RedisSerializationContext.SerializationPair.fromSerializer(new GenericJackson2JsonRedisSerializer(objectMapper)));
     }
 
     @Bean
-    public RedisCacheManager cacheManager(RedisConnectionFactory connectionFactory) {
-        RedisCacheConfiguration cacheConfiguration = cacheConfiguration();
+    public RedisCacheManager cacheManager(RedisConnectionFactory connectionFactory, ObjectMapper objectMapper) {
+        RedisCacheConfiguration cacheConfiguration = cacheConfiguration(objectMapper);
         return RedisCacheManager.builder(connectionFactory)
                 .cacheDefaults(cacheConfiguration)
                 .build();
     }
-
     @Override
     public CacheErrorHandler errorHandler() {
         return new CustomCacheErrorHandler();

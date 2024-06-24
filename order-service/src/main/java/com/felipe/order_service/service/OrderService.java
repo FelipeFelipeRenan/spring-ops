@@ -1,5 +1,6 @@
 package com.felipe.order_service.service;
 
+import java.util.Collections;
 import java.util.List;
 
 import org.hibernate.annotations.Cache;
@@ -26,40 +27,65 @@ public class OrderService {
     }
 
     @Cacheable("orders")
-    @CircuitBreaker(name = "order-service", fallbackMethod = "fallbackMethod")    
+    @CircuitBreaker(name = "order-service", fallbackMethod = "fallbackGetAllItems")    
     public List<Order> getALlItems(){
         return orderRepository.getAllItems();
     }
 
     @CachePut(value = "orders", key = "#order.id")
-    @CircuitBreaker(name = "order-service", fallbackMethod = "fallbackMethod")
+    @CircuitBreaker(name = "order-service", fallbackMethod = "fallbackCreateOrder")
     public boolean createOrder(Order order){
         orderRepository.save(order);
         return true;
     }
 
     @Cacheable(value = "orders", key = "#orderId")
-    @CircuitBreaker(name = "order-service", fallbackMethod = "fallbackMethod")
+    @CircuitBreaker(name = "order-service", fallbackMethod = "fallbackGetOrderById")
 
     public Order getOrderById(String orderId){
         return orderRepository.getById(orderId);
     }
 
     @CacheEvict(value = "orders", key = "#orderId")
-    @CircuitBreaker(name = "order-service", fallbackMethod = "fallbackMethod")
+    @CircuitBreaker(name = "order-service", fallbackMethod = "fallbackDeleteOrderByI")
     public boolean deleteOrderById(String orderId){
         orderRepository.deleteById(orderId);
         return true;
     }
 
-    @CircuitBreaker(name = "order-service", fallbackMethod = "fallbackMethod")
+    @CircuitBreaker(name = "order-service", fallbackMethod = "fallbackUpdateOrder")
     public boolean updateOrder(Order order){
         orderRepository.update(order);
         return true;
     }
+  // Métodos de fallback
+  public List<Order> fallbackGetAllItems(Throwable t) {
+    // Log a falha e fornecer uma resposta padrão
+    System.err.println("Fallback triggered for getAllItems due to: " + t.getMessage());
+    return Collections.emptyList();
+}
 
-    public String fallbackMethod(){
-        return "You got a bigass error";
-    }
+public boolean fallbackCreateOrder(Order order, Throwable t) {
+    // Log a falha e fornecer uma resposta padrão
+    System.err.println("Fallback triggered for createOrder due to: " + t.getMessage());
+    return false;
+}
 
+public Order fallbackGetOrderById(String orderId, Throwable t) {
+    // Log a falha e fornecer uma resposta padrão
+    System.err.println("Fallback triggered for getOrderById due to: " + t.getMessage());
+    return new Order(); // ou retornar null ou uma instância vazia de Order
+}
+
+public boolean fallbackDeleteOrderById(String orderId, Throwable t) {
+    // Log a falha e fornecer uma resposta padrão
+    System.err.println("Fallback triggered for deleteOrderById due to: " + t.getMessage());
+    return false;
+}
+
+public boolean fallbackUpdateOrder(Order order, Throwable t) {
+    // Log a falha e fornecer uma resposta padrão
+    System.err.println("Fallback triggered for updateOrder due to: " + t.getMessage());
+    return false;
+}
 }
