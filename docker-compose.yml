@@ -61,6 +61,35 @@ services:
     networks:
       - mynetwork
 
+  api-gateway:
+    build:
+      context: api-gateway/
+      dockerfile: Dockerfile
+    image: felipedev21/spring-ops-api-gateway:latest
+    container_name: api-gateway
+    environment:
+      - SPRING_APPLICATION_NAME=api-gateway
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
+    ports:
+      - "8080:8080"
+    depends_on:
+      - eureka-server
+    networks:
+      - mynetwork
+
+  eureka-server:
+    build:
+      context: service-doscovery/
+      dockerfile: Dockerfile
+    image: felipedev21/spring-ops-service-discovery:latest
+    container_name: eureka-server
+    environment:
+      - SPRING_APPLICATION_NAME=service-discovery
+    ports:
+      - "8761:8761"
+    networks:
+      - mynetwork
+
   prometheus:
     image: prom/prometheus
     container_name: prometheus
@@ -93,7 +122,6 @@ services:
       - "6379:6379"
     networks:
       - mynetwork
-
 
 volumes:
   postgres_data:
