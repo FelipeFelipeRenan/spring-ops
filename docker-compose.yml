@@ -112,6 +112,7 @@ services:
     ports:
       - "3000:3000"
     volumes:
+      - grafana_data:/var/lib/grafana
       - ./datasource.yml:/etc/grafana/datasource.yml
     depends_on: 
       - order-service
@@ -129,6 +130,7 @@ volumes:
   postgres_data:
   rabbitmq_data:
   localstack_data:
-
+  grafana_data:
+  
 networks:
   mynetwork:
