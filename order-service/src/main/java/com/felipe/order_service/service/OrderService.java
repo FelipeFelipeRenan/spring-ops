@@ -11,6 +11,8 @@ import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 import com.felipe.order_service.model.Order;
+import com.felipe.order_service.model.ProductAvailabilityRequest;
+import com.felipe.order_service.model.ProductAvailabilityResponse;
 import com.felipe.order_service.repository.OrderRepository;
 
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
@@ -26,7 +28,25 @@ public class OrderService {
         this.orderRepository = orderRepository;
     }
 
-    
+    public ProductAvailabilityResponse checkProductAvailability(ProductAvailabilityResponse request){
+        boolean available = true;
+        double totalPrice = 0.0;
+
+        for(Order item : request.getProducts()){
+            Order product = orderRepository.getById(item.getOrderId());
+            if (product == null || product.getQuantity() < item.getQuantity()) {
+                available = false;
+                break;
+            }
+            totalPrice += product.getPrice() * item.getQuantity();
+        }
+
+        ProductAvailabilityResponse response = new ProductAvailabilityResponse();
+        response.setAvailable(available);
+        response.setTotalPrice(totalPrice);
+        response.setProducts(request.getProducts());
+        return response;
+    }
 
     @Cacheable("orders")
     @CircuitBreaker(name = "order-service", fallbackMethod = "fallbackGetAllItems")    
