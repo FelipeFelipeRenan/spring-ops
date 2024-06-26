@@ -26,6 +26,8 @@ public class OrderService {
         this.orderRepository = orderRepository;
     }
 
+    
+
     @Cacheable("orders")
     @CircuitBreaker(name = "order-service", fallbackMethod = "fallbackGetAllItems")    
     public List<Order> getALlItems(){
