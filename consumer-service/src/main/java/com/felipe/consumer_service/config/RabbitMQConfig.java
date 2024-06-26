@@ -9,6 +9,7 @@ import org.springframework.context.annotation.Configuration;
 
 @Configuration
 public class RabbitMQConfig {
+    
     public static final String ORDER_QUEUE = "orderQueue";
     public static final String ORDER_EXCHANGE = "orderExchange";
     public static final String ORDER_ROUTING_KEY = "orderRoutingKey";
