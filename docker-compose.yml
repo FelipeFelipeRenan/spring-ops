@@ -62,7 +62,23 @@ services:
       - service-discovery
     networks:
       - mynetwork
+  
+  consumer-service:
+    build:
+      context: consumer-service/
+      dockerfile: Dockerfile
+    image: felipedev21/spring-ops-consumer-service:latest
+    container_name: consumer-service
+    environment:
+      - SPRING_RABBITMQ_HOST=rabbitmq
+      - SPRING_RABBITMQ_PORT=5672
+    ports:
+      - 8082:8082
+    depends_on:
+      - order-service
 
+    networks:
+      - mynetwork
   api-gateway:
     build:
       context: api-gateway/
