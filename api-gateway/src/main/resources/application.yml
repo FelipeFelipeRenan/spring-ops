@@ -11,7 +11,10 @@ spring:
         uri: lb://order-service # "lb" significa load-balanced, o Gateway usará o Eureka para encontrar o serviço
         predicates:
           - Path=/v1/orders/**
-
+      - id: product-catalog-service
+        uri: lb://product-catalog-service
+        predicates:
+          - Path=/v1/api/products/**
 eureka:
   client:
     service-url:
