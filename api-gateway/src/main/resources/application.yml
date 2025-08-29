@@ -6,26 +6,24 @@ spring:
     name: api-gateway
   cloud:
     gateway:
-      mvc:
-        routes:
-        - id: order-service
-          uri: lb://order-service
-          predicates:
-            - Path=/v1/orders/**
-
+      routes:
+      - id: order-service
+        uri: lb://order-service # "lb" significa load-balanced, o Gateway usará o Eureka para encontrar o serviço
+        predicates:
+          - Path=/v1/orders/**
 
 eureka:
   client:
     service-url:
       defaultZone: http://service-discovery:8761/eureka/
 
-
- # Expor todos os endpoints do Actuator
+# Expor todos os endpoints do Actuator
 management:
   endpoints:
     web:
       exposure:
         include: "*"
 # Habilitar endpoint Prometheus
+  endpoint:
     prometheus:
       enabled: true

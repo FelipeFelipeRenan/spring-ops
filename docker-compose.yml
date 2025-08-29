@@ -1,18 +1,25 @@
 version: '3.8'
+
 services:
+  # 1. CAMADA DE INFRAESTRUTURA
   postgres:
     image: postgres:13
     container_name: postgres
     environment:
-      POSTGRES_DB: orderdb
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
+      - POSTGRES_DB=orderdb
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
     ports:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     networks:
       - mynetwork
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d orderdb"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   rabbitmq:
     image: rabbitmq:3-management
@@ -24,6 +31,11 @@ services:
       - rabbitmq_data:/var/lib/rabbitmq
     networks:
       - mynetwork
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   localstack:
     image: localstack/localstack
@@ -37,12 +49,43 @@ services:
       - localstack_data:/var/lib/localstack
     networks:
       - mynetwork
+    # Healthcheck para LocalStack é mais complexo, mas para desenvolvimento
+    # a inicialização dele costuma ser rápida.
 
+  redis:
+    image: redis:latest
+    container_name: redis
+    ports:
+      - "6379:6379"
+    networks:
+      - mynetwork
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # 2. CAMADA DE PLATAFORMA / ORQUESTRAÇÃO
+  service-discovery:
+    build:
+      context: service-discovery/
+      dockerfile: Dockerfile
+    container_name: service-discovery
+    ports:
+      - "8761:8761"
+    networks:
+      - mynetwork
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8761"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  # 3. CAMADA DE APLICAÇÃO (MICROSSERVIÇOS)
   order-service:
     build:
       context: order-service/
       dockerfile: Dockerfile
-    image: felipedev21/spring-ops-order-service:latest
     container_name: order-service
     environment:
       - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/orderdb
@@ -52,38 +95,49 @@ services:
       - SPRING_RABBITMQ_PORT=5672
       - AWS_DYNAMODB_ENDPOINT=http://localstack:4566
       - AWS_REGION=us-east-1
+      - SPRING_DATA_REDIS_HOST=redis
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://service-discovery:8761/eureka/
     ports:
       - "8081:8081"
     depends_on:
-      - postgres
-      - rabbitmq
-      - localstack
-      - api-gateway
-      - service-discovery
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      localstack:
+        # Idealmente teria um healthcheck aqui também
+        condition: service_started
+      redis:
+        condition: service_healthy
+      service-discovery:
+        condition: service_healthy
     networks:
       - mynetwork
-  
+
   consumer-service:
     build:
       context: consumer-service/
       dockerfile: Dockerfile
-    image: felipedev21/spring-ops-consumer-service:latest
     container_name: consumer-service
     environment:
       - SPRING_RABBITMQ_HOST=rabbitmq
       - SPRING_RABBITMQ_PORT=5672
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://service-discovery:8761/eureka/
     ports:
-      - 8082:8082
+      - "8082:8082"
     depends_on:
-      - order-service
-
+      rabbitmq:
+        condition: service_healthy
+      service-discovery:
+        condition: service_healthy
     networks:
       - mynetwork
+
+  # 4. CAMADA DE BORDA E MONITORAMENTO
   api-gateway:
     build:
       context: api-gateway/
       dockerfile: Dockerfile
-    image: felipedev21/spring-ops-api-gateway:latest
     container_name: api-gateway
     environment:
       - SPRING_APPLICATION_NAME=api-gateway
@@ -91,20 +145,12 @@ services:
     ports:
       - "8080:8080"
     depends_on:
-      - service-discovery
-    networks:
-      - mynetwork
-
-  service-discovery:
-    build:
-      context: service-discovery/
-      dockerfile: Dockerfile
-    image: felipedev21/spring-ops-service-discovery:latest
-    container_name: service-discovery
-    environment:
-      - SPRING_APPLICATION_NAME=service-discovery
-    ports:
-      - "8761:8761"
+      service-discovery:
+        condition: service_healthy
+      order-service:
+        condition: service_started # Depende do serviço estar iniciado, não necessariamente healthy
+      consumer-service:
+        condition: service_started
     networks:
       - mynetwork
 
@@ -124,21 +170,15 @@ services:
     image: grafana/grafana
     container_name: grafana
     environment:
-      - GF_SECURITY_ADMIN_PASSWORD=admin # Defina a senha de administrador
+      - GF_SECURITY_ADMIN_PASSWORD=admin
     ports:
       - "3000:3000"
     volumes:
       - grafana_data:/var/lib/grafana
-      - ./datasource.yml:/etc/grafana/datasource.yml
-    depends_on: 
-      - order-service
-    networks:
-      - mynetwork
-
-  redis:
-    image: redis:latest
-    ports:
-      - "6379:6379"
+      # Aponte para o arquivo de configuração do datasource. Verifique se o nome do arquivo está correto.
+      - ./datasource.yml:/etc/grafana/provisioning/datasources/datasource.yml
+    depends_on:
+      - prometheus
     networks:
       - mynetwork
 
@@ -147,6 +187,6 @@ volumes:
   rabbitmq_data:
   localstack_data:
   grafana_data:
-  
+
 networks:
   mynetwork:
