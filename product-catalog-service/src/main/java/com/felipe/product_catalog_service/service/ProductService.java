@@ -4,6 +4,8 @@ import java.time.Instant;
 
 import org.springframework.stereotype.Service;
 
+import com.felipe.product_catalog_service.dto.CreateProductRequest;
+import com.felipe.product_catalog_service.mapper.ProductMapper;
 import com.felipe.product_catalog_service.model.Product;
 import com.felipe.product_catalog_service.repository.ProductRepository;
 
@@ -14,9 +16,11 @@ import reactor.core.publisher.Mono;
 public class ProductService {
 
     private final ProductRepository productRepository;
+    private final ProductMapper productMapper;
 
-    public ProductService(ProductRepository productRepository) {
+    public ProductService(ProductRepository productRepository, ProductMapper productMapper) {
         this.productRepository = productRepository;
+        this.productMapper = productMapper;
     }
 
     public Flux<Product> findAll() {
@@ -27,7 +31,8 @@ public class ProductService {
         return productRepository.findById(id);
     }
 
-    public Mono<Product> create(Product product) {
+    public Mono<Product> create(CreateProductRequest request) {
+        Product product = productMapper.toEntity(request);
         product.setCreatedAt(Instant.now());
         product.setUpdatedAt(Instant.now());
 

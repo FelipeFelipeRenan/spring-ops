@@ -3,9 +3,13 @@ package com.felipe.product_catalog_service.controller;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.felipe.product_catalog_service.dto.CreateProductRequest;
+import com.felipe.product_catalog_service.dto.ProductResponse;
+import com.felipe.product_catalog_service.mapper.ProductMapper;
 import com.felipe.product_catalog_service.model.Product;
 import com.felipe.product_catalog_service.service.ProductService;
 
+import jakarta.validation.Valid;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -24,27 +28,32 @@ import org.springframework.web.bind.annotation.PutMapping;
 public class ProductController {
 
     private final ProductService productService;
+    private final ProductMapper productMapper;
 
-    public ProductController(ProductService productService) {
+    public ProductController(ProductService productService, ProductMapper productMapper) {
         this.productService = productService;
+        this.productMapper = productMapper;
     }
 
     @GetMapping
-    public Flux<Product> getAllProducts() {
-        return productService.findAll();
+    public Flux<ProductResponse> getAllProducts() {
+        return productService.findAll().map(productMapper::toResponse);
     }
 
     @GetMapping("/{id}")
-    public Mono<ResponseEntity<Product>> getProductById(@PathVariable Long id) {
+    public Mono<ResponseEntity<ProductResponse>> getProductById(@PathVariable Long id) {
         return productService.findById(id)
+                .map(productMapper::toResponse)
                 .map(ResponseEntity::ok)
                 .defaultIfEmpty(ResponseEntity.notFound().build());
     }
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public Mono<Product> createProduct(@RequestBody Product product) {
-        return productService.create(product);
+    public Mono<ProductResponse> createProduct(@Valid @RequestBody Mono<CreateProductRequest> request) {
+        return request
+                .flatMap(productService::create)
+                .map(productMapper::toResponse);
     }
 
     @PutMapping("/{id}")

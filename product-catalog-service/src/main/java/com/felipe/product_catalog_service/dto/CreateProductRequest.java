@@ -23,6 +23,6 @@ public record CreateProductRequest(
     BigDecimal price,
 
     String brand,
-    String Category
+    String category
 
 ) {}
