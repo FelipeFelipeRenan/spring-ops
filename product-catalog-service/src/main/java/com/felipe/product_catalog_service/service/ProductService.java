@@ -27,15 +27,14 @@ public class ProductService {
         return productRepository.findById(id);
     }
 
-
-    public Mono<Product> create(Product product){
+    public Mono<Product> create(Product product) {
         product.setCreatedAt(Instant.now());
         product.setUpdatedAt(Instant.now());
 
         return productRepository.save(product);
     }
 
-    public Mono<Product> update(Long id, Product product){
+    public Mono<Product> update(Long id, Product product) {
         return productRepository.findById(id)
                 .flatMap(existingProduct -> {
                     existingProduct.setName(product.getName());
@@ -46,7 +45,7 @@ public class ProductService {
                 });
     }
 
-    public Mono<Void> deleteById(Long id){
+    public Mono<Void> deleteById(Long id) {
         return productRepository.findById(id)
                 .flatMap(productRepository::delete);
     }

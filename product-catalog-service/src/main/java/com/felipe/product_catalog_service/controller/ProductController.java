@@ -4,12 +4,10 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.felipe.product_catalog_service.model.Product;
-import com.felipe.product_catalog_service.repository.ProductRepository;
+import com.felipe.product_catalog_service.service.ProductService;
 
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
-
-import java.time.Instant;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -25,57 +23,43 @@ import org.springframework.web.bind.annotation.PutMapping;
 @RequestMapping("/v1/api/products")
 public class ProductController {
 
-    private final ProductRepository productRepository;
+    private final ProductService productService;
 
-    public ProductController(ProductRepository productRepository) {
-        this.productRepository = productRepository;
+    public ProductController(ProductService productService) {
+        this.productService = productService;
     }
 
-    @GetMapping("path")
+    @GetMapping
     public Flux<Product> getAllProducts() {
-        return productRepository.findAll();
+        return productService.findAll();
     }
 
     @GetMapping("/{id}")
     public Mono<ResponseEntity<Product>> getProductById(@PathVariable Long id) {
-        return productRepository.findById(id)
-                .map(product -> ResponseEntity.ok(product))
+        return productService.findById(id)
+                .map(ResponseEntity::ok)
                 .defaultIfEmpty(ResponseEntity.notFound().build());
     }
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public Mono<Product> createProduct(@RequestBody Product product) {
-        product.setCreatedAt(Instant.now());
-        product.setUpdatedAt(Instant.now());
-
-        return productRepository.save(product);
+        return productService.create(product);
     }
 
     @PutMapping("/{id}")
     public Mono<ResponseEntity<Product>> updateProduct(@PathVariable Long id, @RequestBody Product product) {
 
-        return productRepository.findById(id)
-                .flatMap(existingProduct -> {
-                    existingProduct.setName(product.getName());
-                    existingProduct.setDescription(product.getDescription());
-                    existingProduct.setPrice(product.getPrice());
-                    existingProduct.setUpdatedAt(Instant.now());
-                    return productRepository.save(existingProduct);
-                })
-                .map(updatedProduct -> ResponseEntity.ok(updatedProduct))
+        return productService.update(id, product)
+                .map(ResponseEntity::ok)
                 .defaultIfEmpty(ResponseEntity.notFound().build());
     }
 
     @DeleteMapping("/{id}")
-    public Mono<ResponseEntity<Void>> deleteProduct(@PathVariable Long id){
-        return productRepository.findById(id)
-                .flatMap(productRepo ->
-                    productRepository.delete(productRepo)
-                                      .then(Mono.just(new ResponseEntity<Void>(HttpStatus.NO_CONTENT)))
-                
-                
-                )
+    public Mono<ResponseEntity<Void>> deleteProduct(@PathVariable Long id) {
+        return productService.findById(id)
+                .flatMap(p -> productService.deleteById(p.getId())
+                        .then(Mono.just(new ResponseEntity<Void>(HttpStatus.NO_CONTENT))))
                 .defaultIfEmpty(new ResponseEntity<>(HttpStatus.NOT_FOUND));
     }
 
