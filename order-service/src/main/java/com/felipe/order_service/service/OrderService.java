@@ -2,16 +2,12 @@ package com.felipe.order_service.service;
 
 import java.util.Collections;
 import java.util.List;
-
-import org.hibernate.annotations.Cache;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.CachePut;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 import com.felipe.order_service.model.Order;
-import com.felipe.order_service.model.ProductAvailabilityRequest;
 import com.felipe.order_service.model.ProductAvailabilityResponse;
 import com.felipe.order_service.repository.OrderRepository;
 
@@ -23,7 +19,6 @@ public class OrderService {
     private final OrderRepository orderRepository;
 
 
-    @Autowired
     public OrderService(OrderRepository orderRepository){
         this.orderRepository = orderRepository;
     }
