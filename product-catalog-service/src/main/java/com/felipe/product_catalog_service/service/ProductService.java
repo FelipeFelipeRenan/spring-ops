@@ -1,5 +1,7 @@
 package com.felipe.product_catalog_service.service;
 
+import java.time.Instant;
+
 import org.springframework.stereotype.Service;
 
 import com.felipe.product_catalog_service.model.Product;
@@ -21,10 +23,32 @@ public class ProductService {
         return productRepository.findAll();
     }
 
-    public Mono<Product> findById(Long id){
+    public Mono<Product> findById(Long id) {
         return productRepository.findById(id);
     }
 
 
-    
+    public Mono<Product> create(Product product){
+        product.setCreatedAt(Instant.now());
+        product.setUpdatedAt(Instant.now());
+
+        return productRepository.save(product);
+    }
+
+    public Mono<Product> update(Long id, Product product){
+        return productRepository.findById(id)
+                .flatMap(existingProduct -> {
+                    existingProduct.setName(product.getName());
+                    existingProduct.setDescription(product.getDescription());
+                    existingProduct.setPrice(product.getPrice());
+                    existingProduct.setUpdatedAt(Instant.now());
+                    return productRepository.save(existingProduct);
+                });
+    }
+
+    public Mono<Void> deleteById(Long id){
+        return productRepository.findById(id)
+                .flatMap(productRepository::delete);
+    }
+
 }
