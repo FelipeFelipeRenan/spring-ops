@@ -14,7 +14,6 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -41,11 +40,9 @@ public class ProductController {
     }
 
     @GetMapping("/{id}")
-    public Mono<ResponseEntity<ProductResponse>> getProductById(@PathVariable Long id) {
+    public Mono<ProductResponse> getProductById(@PathVariable Long id) {
         return productService.findById(id)
-                .map(productMapper::toResponse)
-                .map(ResponseEntity::ok)
-                .defaultIfEmpty(ResponseEntity.notFound().build());
+                .map(productMapper::toResponse);
     }
 
     @PostMapping
@@ -57,19 +54,15 @@ public class ProductController {
     }
 
     @PutMapping("/{id}")
-    public Mono<ResponseEntity<Product>> updateProduct(@PathVariable Long id, @RequestBody Product product) {
+    public Mono<ProductResponse> updateProduct(@PathVariable Long id, @RequestBody Product product) {
 
         return productService.update(id, product)
-                .map(ResponseEntity::ok)
-                .defaultIfEmpty(ResponseEntity.notFound().build());
+                .map(productMapper::toResponse);
     }
 
     @DeleteMapping("/{id}")
-    public Mono<ResponseEntity<Void>> deleteProduct(@PathVariable Long id) {
-        return productService.findById(id)
-                .flatMap(p -> productService.deleteById(p.getId())
-                        .then(Mono.just(new ResponseEntity<Void>(HttpStatus.NO_CONTENT))))
-                .defaultIfEmpty(new ResponseEntity<>(HttpStatus.NOT_FOUND));
+    public Mono<Void> deleteProduct(@PathVariable Long id) {
+        return productService.deleteById(id);
     }
 
 }

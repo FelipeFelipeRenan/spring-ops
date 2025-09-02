@@ -3,7 +3,6 @@ package com.felipe.product_catalog_service.exceptions;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collector;
 import java.util.stream.Collectors;
 
 import org.springframework.http.HttpStatus;

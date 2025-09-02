@@ -5,6 +5,7 @@ import java.time.Instant;
 import org.springframework.stereotype.Service;
 
 import com.felipe.product_catalog_service.dto.CreateProductRequest;
+import com.felipe.product_catalog_service.exceptions.ProductNotFoundException;
 import com.felipe.product_catalog_service.mapper.ProductMapper;
 import com.felipe.product_catalog_service.model.Product;
 import com.felipe.product_catalog_service.repository.ProductRepository;
@@ -28,7 +29,8 @@ public class ProductService {
     }
 
     public Mono<Product> findById(Long id) {
-        return productRepository.findById(id);
+        return productRepository.findById(id)
+                .switchIfEmpty(Mono.error(new ProductNotFoundException("Product not found with ID: " + id)));
     }
 
     public Mono<Product> create(CreateProductRequest request) {
