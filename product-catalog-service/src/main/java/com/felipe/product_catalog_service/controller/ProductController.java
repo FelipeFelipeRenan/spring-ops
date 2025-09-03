@@ -1,5 +1,6 @@
 package com.felipe.product_catalog_service.controller;
 
+import org.springframework.data.domain.Pageable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -22,6 +23,8 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.PutMapping;
 
+import com.felipe.product_catalog_service.dto.UpdateProductRequest;
+
 @RestController
 @RequestMapping("/v1/api/products")
 public class ProductController {
@@ -35,8 +38,8 @@ public class ProductController {
     }
 
     @GetMapping
-    public Flux<ProductResponse> getAllProducts() {
-        return productService.findAll().map(productMapper::toResponse);
+    public Flux<ProductResponse> getAllProducts(Pageable pageable) {
+        return productService.findAll(pageable).map(productMapper::toResponse);
     }
 
     @GetMapping("/{id}")
@@ -54,7 +57,7 @@ public class ProductController {
     }
 
     @PutMapping("/{id}")
-    public Mono<ProductResponse> updateProduct(@PathVariable Long id, @RequestBody Product product) {
+    public Mono<ProductResponse> updateProduct(@PathVariable Long id, @RequestBody UpdateProductRequest product) {
 
         return productService.update(id, product)
                 .map(productMapper::toResponse);

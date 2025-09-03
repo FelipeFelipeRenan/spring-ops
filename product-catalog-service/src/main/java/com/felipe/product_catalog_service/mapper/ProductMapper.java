@@ -4,6 +4,7 @@ import org.springframework.stereotype.Component;
 
 import com.felipe.product_catalog_service.dto.CreateProductRequest;
 import com.felipe.product_catalog_service.dto.ProductResponse;
+import com.felipe.product_catalog_service.dto.UpdateProductRequest;
 import com.felipe.product_catalog_service.model.Product;
 
 @Component
@@ -34,5 +35,16 @@ public class ProductMapper {
                 product.getCreatedAt(),
                 product.getUpdatedAt(),
                 product.getVersion());
+    }
+
+    public void updateEntityFromRequest(UpdateProductRequest request, Product product) {
+        product.setName(request.name());
+        product.setDescription(request.description());
+        product.setPrice(request.price());
+        product.setBrand(request.brand());
+        product.setCategory(request.category());
+        if (request.isActive() != null) {
+            product.setActive(request.isActive());
+        }
     }
 }

@@ -2,9 +2,11 @@ package com.felipe.product_catalog_service.service;
 
 import java.time.Instant;
 
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import com.felipe.product_catalog_service.dto.CreateProductRequest;
+import com.felipe.product_catalog_service.dto.UpdateProductRequest;
 import com.felipe.product_catalog_service.exceptions.ProductNotFoundException;
 import com.felipe.product_catalog_service.mapper.ProductMapper;
 import com.felipe.product_catalog_service.model.Product;
@@ -24,8 +26,10 @@ public class ProductService {
         this.productMapper = productMapper;
     }
 
-    public Flux<Product> findAll() {
-        return productRepository.findAll();
+    public Flux<Product> findAll(Pageable pageable) {
+        return productRepository.findAll(pageable.getSort())
+                .skip(pageable.getOffset())
+                .take(pageable.getPageSize());
     }
 
     public Mono<Product> findById(Long id) {
@@ -41,19 +45,17 @@ public class ProductService {
         return productRepository.save(product);
     }
 
-    public Mono<Product> update(Long id, Product product) {
-        return productRepository.findById(id)
+    public Mono<Product> update(Long id, UpdateProductRequest product) {
+        return findById(id)
                 .flatMap(existingProduct -> {
-                    existingProduct.setName(product.getName());
-                    existingProduct.setDescription(product.getDescription());
-                    existingProduct.setPrice(product.getPrice());
+                    productMapper.updateEntityFromRequest(product, existingProduct);
                     existingProduct.setUpdatedAt(Instant.now());
                     return productRepository.save(existingProduct);
                 });
     }
 
     public Mono<Void> deleteById(Long id) {
-        return productRepository.findById(id)
+        return findById(id)
                 .flatMap(productRepository::delete);
     }
 
