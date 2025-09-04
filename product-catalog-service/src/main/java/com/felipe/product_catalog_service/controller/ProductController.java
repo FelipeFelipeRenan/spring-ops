@@ -1,13 +1,17 @@
 package com.felipe.product_catalog_service.controller;
 
+import java.util.ArrayList;
+import java.util.List;
+
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.felipe.product_catalog_service.dto.CreateProductRequest;
 import com.felipe.product_catalog_service.dto.ProductResponse;
 import com.felipe.product_catalog_service.mapper.ProductMapper;
-import com.felipe.product_catalog_service.model.Product;
 import com.felipe.product_catalog_service.service.ProductService;
 
 import jakarta.validation.Valid;
@@ -22,6 +26,7 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 
 import com.felipe.product_catalog_service.dto.UpdateProductRequest;
 
@@ -38,8 +43,31 @@ public class ProductController {
     }
 
     @GetMapping
-    public Flux<ProductResponse> getAllProducts(Pageable pageable) {
-        return productService.findAll(pageable).map(productMapper::toResponse);
+    public Flux<ProductResponse> getAllProducts(
+            @RequestParam(name = "page", defaultValue = "0") int page,
+            @RequestParam(name = "size", defaultValue = "10") int size,
+            @RequestParam(name = "sort", defaultValue = "id,asc") String[] sort) {
+
+        // Lógica para converter o array de 'sort' em um objeto Sort do Spring
+        List<Sort.Order> orders = new ArrayList<>();
+        if (sort[0].contains(",")) {
+            // Múltiplos parâmetros de sort
+            for (String sortOrder : sort) {
+                String[] _sort = sortOrder.split(",");
+                orders.add(new Sort.Order(_sort[1].equalsIgnoreCase("desc") ? Sort.Direction.DESC : Sort.Direction.ASC,
+                        _sort[0]));
+            }
+        } else {
+            // Apenas um parâmetro de sort
+            orders.add(new Sort.Order(sort[1].equalsIgnoreCase("desc") ? Sort.Direction.DESC : Sort.Direction.ASC,
+                    sort[0]));
+        }
+
+        // Construímos o objeto Pageable manualmente
+        Pageable pageable = PageRequest.of(page, size, Sort.by(orders));
+
+        return productService.findAll(pageable)
+                .map(productMapper::toResponse);
     }
 
     @GetMapping("/{id}")
