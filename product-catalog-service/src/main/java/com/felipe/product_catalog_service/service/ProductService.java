@@ -2,6 +2,9 @@ package com.felipe.product_catalog_service.service;
 
 import java.time.Instant;
 
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.CachePut;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
@@ -18,6 +21,10 @@ import reactor.core.publisher.Mono;
 @Service
 public class ProductService {
 
+
+    public static final String PRODUCT_CACHE_KEY = "'product::' + #id";
+    public static final String PRODUCT_CACHE_NAME = "products";
+
     private final ProductRepository productRepository;
     private final ProductMapper productMapper;
 
@@ -32,6 +39,7 @@ public class ProductService {
                 .take(pageable.getPageSize());
     }
 
+    @Cacheable(value = PRODUCT_CACHE_NAME, key = PRODUCT_CACHE_KEY)
     public Mono<Product> findById(Long id) {
         return productRepository.findById(id)
                 .switchIfEmpty(Mono.error(new ProductNotFoundException("Product not found with ID: " + id)));
@@ -45,6 +53,7 @@ public class ProductService {
         return productRepository.save(product);
     }
 
+    @CachePut(value = PRODUCT_CACHE_NAME, key = PRODUCT_CACHE_KEY)
     public Mono<Product> update(Long id, UpdateProductRequest product) {
         return findById(id)
                 .flatMap(existingProduct -> {
@@ -54,6 +63,7 @@ public class ProductService {
                 });
     }
 
+    @CacheEvict(value = PRODUCT_CACHE_NAME, key = PRODUCT_CACHE_KEY)
     public Mono<Void> deleteById(Long id) {
         return findById(id)
                 .flatMap(productRepository::delete);
