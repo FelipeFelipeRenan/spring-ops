@@ -5,6 +5,7 @@ import java.time.Instant;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.CachePut;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
@@ -21,7 +22,6 @@ import reactor.core.publisher.Mono;
 @Service
 public class ProductService {
 
-
     public static final String PRODUCT_CACHE_KEY = "'product::' + #id";
     public static final String PRODUCT_CACHE_NAME = "products";
 
@@ -33,6 +33,7 @@ public class ProductService {
         this.productMapper = productMapper;
     }
 
+    @Cacheable(value = PRODUCT_CACHE_NAME, keyGenerator = "cacheKeyGenerator")
     public Flux<Product> findAll(Pageable pageable) {
         return productRepository.findAll(pageable.getSort())
                 .skip(pageable.getOffset())
@@ -45,6 +46,7 @@ public class ProductService {
                 .switchIfEmpty(Mono.error(new ProductNotFoundException("Product not found with ID: " + id)));
     }
 
+    @CacheEvict(value = PRODUCT_CACHE_NAME, allEntries = true)
     public Mono<Product> create(CreateProductRequest request) {
         Product product = productMapper.toEntity(request);
         product.setCreatedAt(Instant.now());
@@ -53,7 +55,8 @@ public class ProductService {
         return productRepository.save(product);
     }
 
-    @CachePut(value = PRODUCT_CACHE_NAME, key = PRODUCT_CACHE_KEY)
+    @Caching(evict = { @CacheEvict(value = PRODUCT_CACHE_NAME, allEntries = true) }, put = {
+            @CachePut(value = PRODUCT_CACHE_NAME, key = PRODUCT_CACHE_KEY) })
     public Mono<Product> update(Long id, UpdateProductRequest product) {
         return findById(id)
                 .flatMap(existingProduct -> {
@@ -63,7 +66,10 @@ public class ProductService {
                 });
     }
 
-    @CacheEvict(value = PRODUCT_CACHE_NAME, key = PRODUCT_CACHE_KEY)
+    @Caching(evict = {
+            @CacheEvict(value = PRODUCT_CACHE_NAME, allEntries = true),
+            @CacheEvict(value = PRODUCT_CACHE_NAME, key = PRODUCT_CACHE_KEY)
+    })
     public Mono<Void> deleteById(Long id) {
         return findById(id)
                 .flatMap(productRepository::delete);
