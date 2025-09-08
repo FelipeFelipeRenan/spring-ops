@@ -16,6 +16,9 @@ import com.felipe.product_catalog_service.mapper.ProductMapper;
 import com.felipe.product_catalog_service.model.Product;
 import com.felipe.product_catalog_service.repository.ProductRepository;
 
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.MeterRegistry;
+import org.springframework.context.annotation.Lazy;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -28,9 +31,26 @@ public class ProductService {
     private final ProductRepository productRepository;
     private final ProductMapper productMapper;
 
-    public ProductService(ProductRepository productRepository, ProductMapper productMapper) {
+    private final MeterRegistry meterRegistry;
+    private final ProductService self;
+
+    private final Counter productsFound;
+    private final Counter productsNotFound;
+
+    public ProductService(ProductRepository productRepository, ProductMapper productMapper,
+            MeterRegistry meterRegistry, @Lazy ProductService self) {
         this.productRepository = productRepository;
         this.productMapper = productMapper;
+        this.meterRegistry = meterRegistry;
+        this.self = self; // Armazenamos a referência injetada
+
+        this.productsFound = Counter.builder("products.found")
+                .description("Número de vezes que um produto foi encontrado pelo ID")
+                .register(meterRegistry);
+
+        this.productsNotFound = Counter.builder("products.notfound")
+                .description("Número de vezes que um produto não foi encontrado pelo ID")
+                .register(meterRegistry);
     }
 
     @Cacheable(value = PRODUCT_CACHE_NAME, keyGenerator = "cacheKeyGenerator")
@@ -40,10 +60,24 @@ public class ProductService {
                 .take(pageable.getPageSize());
     }
 
-    @Cacheable(value = PRODUCT_CACHE_NAME, key = PRODUCT_CACHE_KEY)
+    //@Cacheable(value = PRODUCT_CACHE_NAME, key = PRODUCT_CACHE_KEY)
     public Mono<Product> findById(Long id) {
+        return self.findProductCacheable(id)
+                .doOnSuccess(product -> {
+                    if (product != null) {
+                        productsFound.increment();
+                    }
+                })
+                .switchIfEmpty(Mono.defer(() -> {
+                    productsNotFound.increment();
+                    return Mono.error(new ProductNotFoundException("Product not found"));
+                }));
+    }
+
+    @Cacheable(value = PRODUCT_CACHE_NAME, key = PRODUCT_CACHE_KEY)
+    public Mono<Product> findProductCacheable(Long id) {
         return productRepository.findById(id)
-                .switchIfEmpty(Mono.error(new ProductNotFoundException("Product not found with ID: " + id)));
+                .switchIfEmpty(Mono.error(new ProductNotFoundException("Product not found")));
     }
 
     @CacheEvict(value = PRODUCT_CACHE_NAME, allEntries = true)
@@ -52,7 +86,8 @@ public class ProductService {
         product.setCreatedAt(Instant.now());
         product.setUpdatedAt(Instant.now());
 
-        return productRepository.save(product);
+        return productRepository.save(product)
+                .doOnSuccess(savedProduct -> meterRegistry.counter("products.created").increment());
     }
 
     @Caching(evict = { @CacheEvict(value = PRODUCT_CACHE_NAME, allEntries = true) }, put = {
