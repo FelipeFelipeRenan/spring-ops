@@ -7,6 +7,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -24,6 +25,7 @@ import com.felipe.product_catalog_service.dto.UpdateProductRequest;
 import com.felipe.product_catalog_service.mapper.ProductMapper;
 import com.felipe.product_catalog_service.service.ProductService;
 
+import io.micrometer.core.instrument.MeterRegistry;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -39,10 +41,12 @@ public class ProductController {
 
     private final ProductService productService;
     private final ProductMapper productMapper;
+    private final MeterRegistry meterRegistry;
 
-    public ProductController(ProductService productService, ProductMapper productMapper) {
+    public ProductController(ProductService productService, ProductMapper productMapper, MeterRegistry meterRegistry) {
         this.productService = productService;
         this.productMapper = productMapper;
+        this.meterRegistry = meterRegistry;
     }
 
     @GetMapping
@@ -78,9 +82,15 @@ public class ProductController {
     @Operation(summary = "Busca um produto pelo seu ID")
     @ApiResponse(responseCode = "200", description = "Produto encontrado")
     @ApiResponse(responseCode = "404", description = "Produto não encontrado", content = @Content)
-    public Mono<ProductResponse> getProductById(@PathVariable Long id) {
+    public Mono<ResponseEntity<ProductResponse>> getProductById(@PathVariable Long id) {
         return productService.findById(id)
-                .map(productMapper::toResponse);
+                .map(productMapper::toResponse)
+                .map(ResponseEntity::ok)
+                .doOnSuccess(response -> {
+                    if (response != null && response.getStatusCode().is2xxSuccessful()) {
+                        meterRegistry.counter("products.found").increment();
+                    }
+                }).defaultIfEmpty(ResponseEntity.notFound().build());
     }
 
     @PostMapping

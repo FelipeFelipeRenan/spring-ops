@@ -11,11 +11,22 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.bind.support.WebExchangeBindException;
 
+import io.micrometer.core.instrument.MeterRegistry;
+
 @RestControllerAdvice
 public class RestExceptionHandler {
 
+    private final MeterRegistry meterRegistry;
+
+    public RestExceptionHandler(MeterRegistry meterRegistry){
+        this.meterRegistry = meterRegistry;
+    }
+
     @ExceptionHandler(ProductNotFoundException.class)
     public ResponseEntity<Map<String, Object>> handleProductNotFoundException(ProductNotFoundException ex) {
+       
+        meterRegistry.counter("products.notfound").increment();
+       
         Map<String, Object> errorDetails = Map.of(
                 "timestamp", Instant.now(),
                 "status", HttpStatus.NOT_FOUND.value(),
