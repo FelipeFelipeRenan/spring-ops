@@ -1,20 +1,39 @@
-# Use a imagem base com JDK 21
-FROM openjdk:21-jdk
+# --- Estágio 1: Builder com GraalVM ---
+# Usamos uma imagem que já vem com o JDK e as ferramentas de build nativo da GraalVM
+FROM container-registry.oracle.com/graalvm/native-image:21 AS builder
 
-# Set the working directory in the container
 WORKDIR /app
 
-# Copie o Maven wrapper e o arquivo pom.xml
+# Copia os ficheiros de build primeiro para aproveitar o cache de layers do Docker
+COPY ./.mvn ./.mvn
 COPY ./mvnw ./mvnw
 COPY ./pom.xml ./pom.xml
-COPY ./.mvn ./.mvn
 
-# Copie o código-fonte
+# Descarrega as dependências
+RUN ./mvnw dependency:go-offline
+
+# Copia o código fonte
 COPY ./src ./src
 
-# Instale o Maven e compile a aplicação
-RUN chmod +x ./mvnw
-RUN ./mvnw clean package -DskipTests
+# Executa o build nativo ativando o perfil 'native'
+RUN ./mvnw clean package -Pnative -DskipTests
 
-# Especifique o comando para iniciar o Eureka Server
-CMD ["java", "-jar", "target/api-gateway-0.0.1-SNAPSHOT.jar"]
+
+RUN ls -l /app/target   
+# --- Estágio 2: Imagem Final ---
+# Usamos uma imagem base slim do Debian 12
+FROM debian:12-slim
+
+# Instala a biblioteca 'zlib' (que fornece o libz.so.1) e o ca-certificates (para conexões HTTPS)
+RUN apt-get update && apt-get install -y libz-dev ca-certificates && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+# Copia o executável do estágio de builder
+COPY --from=builder /app/target/api-gateway .
+
+# Expõe a porta
+EXPOSE 8083
+
+# Comando para iniciar a aplicação
+CMD ["/app/api-gateway"]
