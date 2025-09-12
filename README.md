@@ -24,7 +24,7 @@ A arquitetura é projetada para ser elástica, resiliente e responsiva, abraçan
 | `service-discovery` | 8761 | Registo e descoberta de serviços (Netflix Eureka). | ✅ Implementado |
 | `api-gateway` | 8080 | Ponto de entrada único, roteamento e segurança (Spring Cloud Gateway). | ✅ Implementado |
 | `product-catalog-service` | 8083 | Gestão do catálogo de produtos (WebFlux, R2DBC, PostgreSQL, GraalVM). | ✅ Implementado |
-| `inventory-service` | 8084 | Controlo de stock em tempo real (WebFlux, Redis, GraalVM). | 🚧 Em Desenvolvimento |
+| `inventory-service` | 8084 | Controle de stock em tempo real (WebFlux, Redis, GraalVM). | 🚧 Em Desenvolvimento |
 | `kafka` | 9092 | Broker de eventos para comunicação assíncrona. | ✅ Implementado |
 | `kafka-ui` | 8989 | UI para visualizar tópicos e mensagens do Kafka. | ✅ Implementado |
 | `postgres` | 5432 | Base de dados relacional. | ✅ Implementado |
@@ -57,7 +57,7 @@ O projeto está configurado para dois ambientes distintos, utilizando um `Makefi
 Ideal para o desenvolvimento diário. Constrói e executa os serviços na JVM.
 
 ```bash
-# Constrói e inicia todos os contentores em modo de desenvolvimento
+# Constrói e inicia todos os containers em modo de desenvolvimento
 make start-dev
 ```
 
@@ -66,19 +66,21 @@ make start-dev
 Constrói os serviços compatíveis como executáveis nativos GraalVM.
 
 ```bash
-# Constrói (sem cache) e inicia todos os contentores em modo nativo
+# Constrói (sem cache) e inicia todos os containers em modo nativo
 make start-native
 ```
 
 ### Comandos Úteis (via Makefile)
 
 ```bash
-# Para e remove todos os contentores e volumes (limpeza total)
+# Para e remove todos os containers e volumes (limpeza total)
 make clean
 
-# Mostra os logs de todos os serviços em tempo real
-make logs
+# Mostra os logs do ambiente de desenvolvimento
+make logs-dev
 
+# Mostra os logs do ambiente nativo
+make logs-native
 # Lista todos os comandos disponíveis
 make help
 ```
