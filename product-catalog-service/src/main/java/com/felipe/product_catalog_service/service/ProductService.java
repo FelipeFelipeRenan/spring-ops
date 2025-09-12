@@ -1,6 +1,7 @@
 package com.felipe.product_catalog_service.service;
 
 import java.time.Instant;
+import java.time.OffsetDateTime;
 
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.CachePut;
@@ -55,8 +56,10 @@ public class ProductService {
     @CacheEvict(value = PRODUCT_CACHE_NAME, allEntries = true)
     public Mono<Product> create(CreateProductRequest request) {
         Product product = productMapper.toEntity(request);
-        product.setCreatedAt(Instant.now());
-        product.setUpdatedAt(Instant.now());
+        OffsetDateTime now = OffsetDateTime.now();
+
+        product.setCreatedAt(now);
+        product.setUpdatedAt(now);
 
         return productRepository.save(product);
     }
@@ -67,7 +70,7 @@ public class ProductService {
         return findById(id)
                 .flatMap(existingProduct -> {
                     productMapper.updateEntityFromRequest(product, existingProduct);
-                    existingProduct.setUpdatedAt(Instant.now());
+                    existingProduct.setUpdatedAt(OffsetDateTime.now());
                     return productRepository.save(existingProduct);
                 });
     }
