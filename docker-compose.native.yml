@@ -1,0 +1,205 @@
+services:
+  # 1. CAMADA DE INFRAESTRUTURA
+  postgres:
+    image: postgres:13
+    container_name: postgres
+    environment:
+      - POSTGRES_DB=orderdb
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - mynetwork
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d orderdb"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    networks:
+      - mynetwork
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  localstack:
+    image: localstack/localstack
+    container_name: localstack
+    ports:
+      - "4566:4566"
+    environment:
+      - SERVICES=ec2,dynamodb,s3,iam
+      - DEFAULT_REGION=us-east-1
+    volumes:
+      - localstack_data:/var/lib/localstack
+    networks:
+      - mynetwork
+    # Healthcheck para LocalStack é mais complexo, mas para desenvolvimento
+    # a inicialização dele costuma ser rápida.
+
+  redis:
+    image: redis:latest
+    container_name: redis
+    ports:
+      - "6379:6379"
+    networks:
+      - mynetwork
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # 2. CAMADA DE PLATAFORMA / ORQUESTRAÇÃO
+  service-discovery:
+    build:
+      context: service-discovery/
+      dockerfile: Dockerfile
+    container_name: service-discovery
+    ports:
+      - "8761:8761"
+    networks:
+      - mynetwork
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8761"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  # 3. CAMADA DE APLICAÇÃO (MICROSSERVIÇOS)
+  order-service:
+    build:
+      context: order-service/
+      dockerfile: Dockerfile
+    container_name: order-service
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/orderdb
+      - SPRING_DATASOURCE_USERNAME=postgres
+      - SPRING_DATASOURCE_PASSWORD=postgres
+      - SPRING_RABBITMQ_HOST=rabbitmq
+      - SPRING_RABBITMQ_PORT=5672
+      - AWS_DYNAMODB_ENDPOINT=http://localstack:4566
+      - AWS_REGION=us-east-1
+      - SPRING_DATA_REDIS_HOST=redis
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://service-discovery:8761/eureka/
+    ports:
+      - "8081:8081"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      localstack:
+        # Idealmente teria um healthcheck aqui também
+        condition: service_started
+      redis:
+        condition: service_healthy
+      service-discovery:
+        condition: service_healthy
+    networks:
+      - mynetwork
+
+  consumer-service:
+    build:
+      context: consumer-service/
+      dockerfile: Dockerfile
+    container_name: consumer-service
+    environment:
+      - SPRING_RABBITMQ_HOST=rabbitmq
+      - SPRING_RABBITMQ_PORT=5672
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://service-discovery:8761/eureka/
+    ports:
+      - "8082:8082"
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      service-discovery:
+        condition: service_healthy
+    networks:
+      - mynetwork
+  # Adicione este bloco dentro da seção 'services:' do seu docker-compose.yml
+  product-catalog-service:
+    build:
+      context: product-catalog-service/
+      dockerfile: Dockerfile.native
+    container_name: product-catalog-service
+    ports:
+      - "8083:8083" # Expondo a nova porta
+    networks:
+      - mynetwork
+    depends_on:
+      postgres:
+        condition: service_healthy
+      service-discovery:
+        condition: service_healthy
+
+  # 4. CAMADA DE BORDA E MONITORAMENTO
+  api-gateway:
+    build:
+      context: api-gateway/
+      dockerfile: Dockerfile
+    container_name: api-gateway
+    environment:
+      - SPRING_APPLICATION_NAME=api-gateway
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://service-discovery:8761/eureka/
+    ports:
+      - "8080:8080"
+    depends_on:
+      service-discovery:
+        condition: service_healthy
+      order-service:
+        condition: service_started # Depende do serviço estar iniciado, não necessariamente healthy
+      consumer-service:
+        condition: service_started
+    networks:
+      - mynetwork
+
+  prometheus:
+    image: prom/prometheus
+    container_name: prometheus-spring
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+    ports:
+      - "9090:9090"
+    networks:
+      - mynetwork
+
+  grafana:
+    image: grafana/grafana
+    container_name: grafana-spring
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    ports:
+      - "3000:3000"
+    volumes:
+      - grafana_data:/var/lib/grafana
+      # Aponte para o arquivo de configuração do datasource. Verifique se o nome do arquivo está correto.
+      - ./datasource.yml:/etc/grafana/provisioning/datasources/datasource.yml
+    depends_on:
+      - prometheus
+    networks:
+      - mynetwork
+
+volumes:
+  postgres_data:
+  rabbitmq_data:
+  localstack_data:
+  grafana_data:
+
+networks:
+  mynetwork:

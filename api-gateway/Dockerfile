@@ -13,7 +13,7 @@ RUN ./mvnw clean package -DskipTests
 FROM eclipse-temurin:21-jre
 WORKDIR /app
 
-# Copia o ficheiro JAR do estágio de builder
+# Copia o arquivo JAR do estágio de builder
 COPY --from=builder /app/target/api-gateway-0.0.1-SNAPSHOT.jar .
 
 EXPOSE 8080

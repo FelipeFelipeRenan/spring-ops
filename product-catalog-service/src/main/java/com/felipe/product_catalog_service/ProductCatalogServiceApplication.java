@@ -3,7 +3,6 @@ package com.felipe.product_catalog_service;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.boot.autoconfigure.EnableAutoConfiguration; // IMPORT
 import org.springframework.cloud.autoconfigure.RefreshAutoConfiguration;
 import org.springframework.cache.annotation.EnableCaching;
 

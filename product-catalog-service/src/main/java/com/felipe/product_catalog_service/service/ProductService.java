@@ -1,6 +1,5 @@
 package com.felipe.product_catalog_service.service;
 
-import java.time.Instant;
 import java.time.OffsetDateTime;
 
 import org.springframework.cache.annotation.CacheEvict;
