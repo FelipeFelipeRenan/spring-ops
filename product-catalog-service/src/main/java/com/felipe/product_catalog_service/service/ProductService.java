@@ -7,9 +7,12 @@ import org.springframework.cache.annotation.CachePut;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.cache.annotation.Caching;
 import org.springframework.data.domain.Pageable;
+import org.springframework.messaging.Message;
+import org.springframework.messaging.support.MessageBuilder;
 import org.springframework.stereotype.Service;
 
 import com.felipe.product_catalog_service.dto.CreateProductRequest;
+import com.felipe.product_catalog_service.dto.ProductEvent;
 import com.felipe.product_catalog_service.dto.UpdateProductRequest;
 import com.felipe.product_catalog_service.exceptions.ProductNotFoundException;
 import com.felipe.product_catalog_service.mapper.ProductMapper;
@@ -18,6 +21,7 @@ import com.felipe.product_catalog_service.repository.ProductRepository;
 
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import reactor.core.publisher.Sinks;
 
 @Service
 public class ProductService {
@@ -27,6 +31,8 @@ public class ProductService {
 
     private final ProductRepository productRepository;
     private final ProductMapper productMapper;
+
+    private final Sinks.Many<Message<ProductEvent>> eventSink = Sinks.many().multicast().onBackpressureBuffer();
 
     public ProductService(ProductRepository productRepository, ProductMapper productMapper) {
         this.productRepository = productRepository;
@@ -60,7 +66,11 @@ public class ProductService {
         product.setCreatedAt(now);
         product.setUpdatedAt(now);
 
-        return productRepository.save(product);
+        return productRepository.save(product).doOnSuccess(savedProduct -> {
+            ProductEvent event = new ProductEvent("PRODUCT_CREATED", savedProduct.getSku(), savedProduct.getName(), savedProduct.getPrice());
+            Message<ProductEvent> message = MessageBuilder.withPayload(event).build();
+            eventSink.tryEmitNext(message);
+        });
     }
 
     @Caching(evict = { @CacheEvict(value = PRODUCT_CACHE_NAME, allEntries = true) }, put = {
@@ -81,6 +91,10 @@ public class ProductService {
     public Mono<Void> deleteById(Long id) {
         return findById(id)
                 .flatMap(productRepository::delete);
+    }
+
+    public Flux<Message<ProductEvent>> getEventPublisher(){
+        return eventSink.asFlux();
     }
 
 }

@@ -19,21 +19,39 @@ services:
       timeout: 5s
       retries: 5
 
-  rabbitmq:
-    image: rabbitmq:3-management
-    container_name: rabbitmq
+# ADICIONE ESTES SERVIÇOS E REMOVA O RABBITMQ
+  kafka:
+    image: 'bitnami/kafka:latest'
+    container_name: kafka
     ports:
-      - "5672:5672"
-      - "15672:15672"
-    volumes:
-      - rabbitmq_data:/var/lib/rabbitmq
+      - "9092:9092"
+    environment:
+      # Configuração para o modo KRaft (sem Zookeeper)
+      - KAFKA_CFG_NODE_ID=0
+      - KAFKA_CFG_PROCESS_ROLES=broker,controller
+      - KAFKA_CFG_LISTENERS=PLAINTEXT://:9092,CONTROLLER://:9093
+      - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
+      - KAFKA_CFG_CONTROLLER_LISTENER_NAMES=CONTROLLER # <-- A LINHA QUE FALTAVA
+      - KAFKA_CFG_CONTROLLER_QUORUM_VOTERS=0@kafka:9093
+      # Configuração do Broker
+      - KAFKA_CFG_BROKER_ID=0
+      - KAFKA_CFG_ADVERTISED_LISTENERS=PLAINTEXT://kafka:9092
     networks:
       - mynetwork
-    healthcheck:
-      test: ["CMD", "rabbitmq-diagnostics", "ping"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+
+  # Ferramenta de UI para visualizar os tópicos e mensagens do Kafka (muito útil!)
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    container_name: kafka-ui
+    ports:
+      - "8989:8080" # Acesse em http://localhost:8989
+    environment:
+      KAFKA_CLUSTERS_0_NAME: local
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:9092
+    depends_on:
+      - kafka
+    networks:
+      - mynetwork
 
   localstack:
     image: localstack/localstack
@@ -89,8 +107,6 @@ services:
       - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/orderdb
       - SPRING_DATASOURCE_USERNAME=postgres
       - SPRING_DATASOURCE_PASSWORD=postgres
-      - SPRING_RABBITMQ_HOST=rabbitmq
-      - SPRING_RABBITMQ_PORT=5672
       - AWS_DYNAMODB_ENDPOINT=http://localstack:4566
       - AWS_REGION=us-east-1
       - SPRING_DATA_REDIS_HOST=redis
@@ -99,8 +115,6 @@ services:
       - "8081:8081"
     depends_on:
       postgres:
-        condition: service_healthy
-      rabbitmq:
         condition: service_healthy
       localstack:
         # Idealmente teria um healthcheck aqui também
@@ -118,14 +132,10 @@ services:
       dockerfile: Dockerfile
     container_name: consumer-service
     environment:
-      - SPRING_RABBITMQ_HOST=rabbitmq
-      - SPRING_RABBITMQ_PORT=5672
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://service-discovery:8761/eureka/
     ports:
       - "8082:8082"
     depends_on:
-      rabbitmq:
-        condition: service_healthy
       service-discovery:
         condition: service_healthy
     networks:
@@ -197,7 +207,6 @@ services:
 
 volumes:
   postgres_data:
-  rabbitmq_data:
   localstack_data:
   grafana_data:
 
