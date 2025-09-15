@@ -9,6 +9,7 @@ import org.springframework.cache.annotation.Caching;
 import org.springframework.data.domain.Pageable;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.support.MessageBuilder;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 
 import com.felipe.product_catalog_service.dto.CreateProductRequest;
@@ -58,6 +59,7 @@ public class ProductService {
                 .switchIfEmpty(Mono.error(new ProductNotFoundException("Product not found")));
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     @CacheEvict(value = PRODUCT_CACHE_NAME, allEntries = true)
     public Mono<Product> create(CreateProductRequest request) {
         Product product = productMapper.toEntity(request);
@@ -67,12 +69,14 @@ public class ProductService {
         product.setUpdatedAt(now);
 
         return productRepository.save(product).doOnSuccess(savedProduct -> {
-            ProductEvent event = new ProductEvent("PRODUCT_CREATED", savedProduct.getSku(), savedProduct.getName(), savedProduct.getPrice());
+            ProductEvent event = new ProductEvent("PRODUCT_CREATED", savedProduct.getSku(), savedProduct.getName(),
+                    savedProduct.getPrice());
             Message<ProductEvent> message = MessageBuilder.withPayload(event).build();
             eventSink.tryEmitNext(message);
         });
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     @Caching(evict = { @CacheEvict(value = PRODUCT_CACHE_NAME, allEntries = true) }, put = {
             @CachePut(value = PRODUCT_CACHE_NAME, key = PRODUCT_CACHE_KEY) })
     public Mono<Product> update(Long id, UpdateProductRequest product) {
@@ -84,6 +88,7 @@ public class ProductService {
                 });
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     @Caching(evict = {
             @CacheEvict(value = PRODUCT_CACHE_NAME, allEntries = true),
             @CacheEvict(value = PRODUCT_CACHE_NAME, key = PRODUCT_CACHE_KEY)
@@ -93,7 +98,7 @@ public class ProductService {
                 .flatMap(productRepository::delete);
     }
 
-    public Flux<Message<ProductEvent>> getEventPublisher(){
+    public Flux<Message<ProductEvent>> getEventPublisher() {
         return eventSink.asFlux();
     }
 
