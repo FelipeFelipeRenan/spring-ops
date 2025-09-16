@@ -18,7 +18,6 @@ import com.felipe.product_catalog_service.dto.UpdateProductRequest;
 import com.felipe.product_catalog_service.exceptions.ProductNotFoundException;
 import com.felipe.product_catalog_service.mapper.ProductMapper;
 import com.felipe.product_catalog_service.model.Product;
-import com.felipe.product_catalog_service.repository.ProductRepository;
 
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -30,20 +29,20 @@ public class ProductService {
     public static final String PRODUCT_CACHE_KEY = "'product::' + #id";
     public static final String PRODUCT_CACHE_NAME = "products";
 
-    private final ProductRepository productRepository;
+    private final RepositoryResilienceDecorator repositoryResilienceDecorator;
     private final ProductMapper productMapper;
 
     private final Sinks.Many<Message<ProductEvent>> eventSink = Sinks.many().multicast().onBackpressureBuffer();
 
-    public ProductService(ProductRepository productRepository, ProductMapper productMapper) {
-        this.productRepository = productRepository;
+    public ProductService(RepositoryResilienceDecorator repositoryResilienceDecorator, ProductMapper productMapper) {
+        this.repositoryResilienceDecorator = repositoryResilienceDecorator;
         this.productMapper = productMapper;
 
     }
 
     @Cacheable(value = PRODUCT_CACHE_NAME, keyGenerator = "cacheKeyGenerator")
     public Flux<Product> findAll(Pageable pageable) {
-        return productRepository.findAll(pageable.getSort())
+        return repositoryResilienceDecorator.findAll(pageable)
                 .skip(pageable.getOffset())
                 .take(pageable.getPageSize());
     }
@@ -55,7 +54,7 @@ public class ProductService {
 
     @Cacheable(value = PRODUCT_CACHE_NAME, key = PRODUCT_CACHE_KEY)
     public Mono<Product> findProductCacheable(Long id) {
-        return productRepository.findById(id)
+        return repositoryResilienceDecorator.findById(id)
                 .switchIfEmpty(Mono.error(new ProductNotFoundException("Product not found")));
     }
 
@@ -68,7 +67,7 @@ public class ProductService {
         product.setCreatedAt(now);
         product.setUpdatedAt(now);
 
-        return productRepository.save(product).doOnSuccess(savedProduct -> {
+        return repositoryResilienceDecorator.save(product).doOnSuccess(savedProduct -> {
             ProductEvent event = new ProductEvent("PRODUCT_CREATED", savedProduct.getSku(), savedProduct.getName(),
                     savedProduct.getPrice());
             Message<ProductEvent> message = MessageBuilder.withPayload(event).build();
@@ -84,7 +83,7 @@ public class ProductService {
                 .flatMap(existingProduct -> {
                     productMapper.updateEntityFromRequest(product, existingProduct);
                     existingProduct.setUpdatedAt(OffsetDateTime.now());
-                    return productRepository.save(existingProduct);
+                    return repositoryResilienceDecorator.save(existingProduct);
                 });
     }
 
@@ -95,7 +94,7 @@ public class ProductService {
     })
     public Mono<Void> deleteById(Long id) {
         return findById(id)
-                .flatMap(productRepository::delete);
+                .flatMap(repositoryResilienceDecorator::delete);
     }
 
     public Flux<Message<ProductEvent>> getEventPublisher() {
