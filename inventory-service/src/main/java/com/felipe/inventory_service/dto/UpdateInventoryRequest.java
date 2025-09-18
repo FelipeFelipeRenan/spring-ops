@@ -1,4 +1,4 @@
-package com.felipe.inventory_service.dtos;
+package com.felipe.inventory_service.dto;
 
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;

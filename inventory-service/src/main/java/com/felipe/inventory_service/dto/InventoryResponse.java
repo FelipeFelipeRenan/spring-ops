@@ -1,4 +1,4 @@
-package com.felipe.inventory_service.dtos;
+package com.felipe.inventory_service.dto;
 
 public record InventoryResponse(
         String sku,
