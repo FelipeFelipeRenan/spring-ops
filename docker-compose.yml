@@ -156,6 +156,22 @@ services:
       service-discovery:
         condition: service_healthy
 
+  inventory-service:
+    build:
+      context: inventory-service/
+      dockerfile: Dockerfile
+    container_name: inventory-service
+    ports:
+      - "8084:8084" # Expondo a nova porta
+    networks:
+      - mynetwork
+    depends_on:
+      postgres:
+        condition: service_healthy
+      service-discovery:
+        condition: service_healthy
+
+
   # 4. CAMADA DE BORDA E MONITORAMENTO
   api-gateway:
     build:
