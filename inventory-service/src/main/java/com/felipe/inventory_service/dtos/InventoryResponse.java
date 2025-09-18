@@ -1,6 +1,6 @@
 package com.felipe.inventory_service.dtos;
 
-public record InventoryService(
+public record InventoryResponse(
         String sku,
         long quantity) {
 }
