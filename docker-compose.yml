@@ -98,49 +98,7 @@ services:
       retries: 10
 
   # 3. CAMADA DE APLICAÇÃO (MICROSSERVIÇOS)
-  order-service:
-    build:
-      context: order-service/
-      dockerfile: Dockerfile
-    container_name: order-service
-    environment:
-      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/orderdb
-      - SPRING_DATASOURCE_USERNAME=postgres
-      - SPRING_DATASOURCE_PASSWORD=postgres
-      - AWS_DYNAMODB_ENDPOINT=http://localstack:4566
-      - AWS_REGION=us-east-1
-      - SPRING_DATA_REDIS_HOST=redis
-      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://service-discovery:8761/eureka/
-    ports:
-      - "8081:8081"
-    depends_on:
-      postgres:
-        condition: service_healthy
-      localstack:
-        # Idealmente teria um healthcheck aqui também
-        condition: service_started
-      redis:
-        condition: service_healthy
-      service-discovery:
-        condition: service_healthy
-    networks:
-      - mynetwork
 
-  consumer-service:
-    build:
-      context: consumer-service/
-      dockerfile: Dockerfile
-    container_name: consumer-service
-    environment:
-      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://service-discovery:8761/eureka/
-    ports:
-      - "8082:8082"
-    depends_on:
-      service-discovery:
-        condition: service_healthy
-    networks:
-      - mynetwork
-  # Adicione este bloco dentro da seção 'services:' do seu docker-compose.yml
   product-catalog-service:
     build:
       context: product-catalog-service/
@@ -166,7 +124,7 @@ services:
     networks:
       - mynetwork
     depends_on:
-      postgres:
+      redis:
         condition: service_healthy
       service-discovery:
         condition: service_healthy
@@ -186,9 +144,9 @@ services:
     depends_on:
       service-discovery:
         condition: service_healthy
-      order-service:
+      inventory-service:
         condition: service_started # Depende do serviço estar iniciado, não necessariamente healthy
-      consumer-service:
+      product-catalog-service:
         condition: service_started
     networks:
       - mynetwork
